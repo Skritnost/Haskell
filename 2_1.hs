@@ -1,52 +1,56 @@
-data BinaryTree = Leaf | Branch Integer BinaryTree BinaryTree
-                                   deriving (Show)
- 
-emptyTree :: BinaryTree
-emptyTree = Leaf
- 
-containsElement :: BinaryTree -> Integer -> Bool
-containsElement Leaf _ = False
-containsElement (Branch key left right) k
-    | k < key  = containsElement left k
-    | k > key  = containsElement right k
-    | otherwise = True
- 
-nearestGE :: BinaryTree -> Integer -> Integer
-nearestGE t k = get t 0
-    where get Leaf p = p
-          get (Branch key left right) p
-            | k < key  = get left  key
-            | k > key  = get right p
-            | otherwise = k
- 
+data BinaryTree = EmptyTree
+                | Leaf Integer
+                | Node Integer BinaryTree BinaryTree deriving Show
+
+-- add element
 insert :: BinaryTree -> Integer -> BinaryTree
-insert Leaf k = Branch k Leaf Leaf
-insert (Branch key left right) k
-    | k < key  = Branch key (insert left k) right
-    | k > key  = Branch key left (insert right k)
-    | otherwise = Branch key left right
- 
+insert EmptyTree x = Leaf x
+insert (Leaf l) x | x < l    = Node l (Leaf x) EmptyTree
+                  | x > l = Node l EmptyTree (Leaf x)
+                  | otherwise = Leaf l                   
+insert (Node v l r) x | x < v = Node v (insert l x) r
+                      | x > v = Node v l (insert r x)
+                      | otherwise = Node v l r
+
+-- delete element
 remove :: BinaryTree -> Integer -> BinaryTree
-remove Leaf _ = Leaf
-remove (Branch key left right) k
-    | k < key  = Branch key (remove left k) right
-    | k > key  = Branch key left (remove right k)
-    | otherwise = if isLeaf right
-                 then left
-                 else Branch leftmost left right'
-                     where
-                       isLeaf Leaf = True
-                       isLeaf _    = False
-                       (leftmost, right') = deleteLeftmost right
-                       deleteLeftmost (Branch key'' Leaf right'') = (key'', right'')
-                       deleteLeftmost ~(Branch key'' left'' right'') = (pair, Branch key'' left' right'')
-                            where (pair, left') = deleteLeftmost left''
- 
+remove EmptyTree _ = EmptyTree
+remove (Leaf l) x = if (l == x) then EmptyTree else Leaf l
+remove (Node v l r) x | x < v = Node v (remove l x) r
+                      | x > v = Node v l (remove r x)
+
+-- If v = x, delete square nod, last two poddereva combine in new nod, choose like a square - square left poddereva
+                      | otherwise = combine l r
+                      where combine EmptyTree t = t
+                            combine t EmptyTree = t
+                            combine (Leaf l) t = Node l EmptyTree t
+                            combine (Node v l r) t = Node v l (combine r t)
+
+-- Create empty tree
+emptyTree :: BinaryTree
+emptyTree = EmptyTree
+
+-- search element in tree
+containsElement :: BinaryTree -> Integer -> Bool
+containsElement EmptyTree _ = False
+containsElement (Leaf l)  x = x == l
+containsElement (Node v l r) x | x < v = containsElement l x
+                               | x > v = containsElement r x
+                               | otherwise = v == x
+
+-- Search in tree least element, which is bigger or equal to this
+nearestE EmptyTree _ = error "Not found!"
+nearestGE (Leaf a) x = if (x < a) then a else error "Not found!"
+nearestGE (Node v l r) x | v == x = v
+                         | v < x  = nearestGE r x
+                         | v > x  = nearestGE l x
+
+-- Create tree from list
 treeFromList :: [Integer] -> BinaryTree
-treeFromList = foldr (flip insert) Leaf
- 
+treeFromList lst = foldl insert EmptyTree lst
+
+-- Create list from tree
 listFromTree :: BinaryTree -> [Integer]
-listFromTree tree = toList' tree []
-    where
-      toList' Leaf list = list
-      toList' (Branch key left right) list = toList' left (key: toList' right list)
+listFromTree EmptyTree = []
+listFromTree (Leaf l) = [l]
+listFromTree (Node v l r) = (listFromTree l) ++ [v] ++ (listFromTree r)
