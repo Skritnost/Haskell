@@ -15,9 +15,9 @@ nod a b | a == b = a
         | a > b = if a `mod` b == 0 then b else nod b (a - b)
         | otherwise = nod b a
 
-job :: Int -> Int -> Maybe Int 
-job l r = go $ floor (sqrt $ fromIntegral l :: Double) 
-    where go i = case i*i of
-                    k | k >= r -> Nothing
-                      | k > l -> Just k
-                    _ -> go $ i+1
+t_pow :: Integer -> Integer -> Integer
+t_pow m n | n < 0 = error "Negative component"
+          | n == 0 = 1
+          | n == 1 = m
+          | n `mod` 2 == 1 = m * t_pow m (n-1)
+          | n `mod` 2 == 0 = t_pow (m*m) (div n 2)
